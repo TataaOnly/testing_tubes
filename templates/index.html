@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sistem Kasir SIMRS</title>
+    <style>
+        body { font-family: Arial; padding: 50px; background-color: #f4f4f9; }
+        .card { background: white; padding: 20px; border-radius: 8px; max-width: 400px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        input, button { padding: 10px; margin-top: 10px; width: 100%; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; border: none; cursor: pointer; }
+        #result { margin-top: 20px; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Modul Kasir SIMRS</h2>
+        <label>Masukkan ID Antrean (Appointment):</label>
+        <!-- Validasi HTML Blackbox BB-04: Hanya menerima angka -->
+        <input type="number" id="id_appointment" placeholder="Contoh: 1" required>
+        <button onclick="generateInvoice()">Buat Invoice</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function generateInvoice() {
+            const id = document.getElementById('id_appointment').value;
+            const resultDiv = document.getElementById('result');
+            
+            if(!id) {
+                resultDiv.innerHTML = '<div class="error">ID tidak boleh kosong!</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = 'Memproses...';
+
+            const response = await fetch('/api/billing', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_appointment: parseInt(id) })
+            });
+
+            const data = await response.json();
+
+            if(response.status === 201) {
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <strong>Berhasil!</strong><br>
+                        ID Invoice: ${data.data.id_invoice}<br>
+                        Jenis Bayar: ${data.data.jenis_pembayaran}<br>
+                        <strong>Total: Rp ${data.data.total}</strong>
+                    </div>`;
+            } else {
+                resultDiv.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
