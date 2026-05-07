@@ -1,60 +1,268 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Sistem Kasir SIMRS</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIMRS Dashboard</title>
     <style>
-        body { font-family: Arial; padding: 50px; background-color: #f4f4f9; }
-        .card { background: white; padding: 20px; border-radius: 8px; max-width: 400px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        input, button { padding: 10px; margin-top: 10px; width: 100%; box-sizing: border-box; }
-        button { background-color: #007bff; color: white; border: none; cursor: pointer; }
-        #result { margin-top: 20px; padding: 10px; border-radius: 5px; }
-        .success { background-color: #d4edda; color: #155724; }
-        .error { background-color: #f8d7da; color: #721c24; }
+        body { font-family: sans-serif; margin: 2em; background-color: #f4f4f9; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        select, input, button { padding: 10px; margin-top: 5px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ccc; width: calc(100% - 22px); }
+        button { background-color: #007bff; color: white; cursor: pointer; border-color: #007bff; }
+        button:hover { background-color: #0056b3; }
+        .role-panel { display: none; margin-top: 20px; padding: 15px; border: 1px solid #eee; border-radius: 5px; }
+        #response { margin-top: 20px; padding: 10px; background-color: #e9ecef; border: 1px solid #ced4da; border-radius: 5px; white-space: pre-wrap; word-wrap: break-word; }
+        .form-group { margin-bottom: 15px; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>Modul Kasir SIMRS</h2>
-        <label>Masukkan ID Antrean (Appointment):</label>
-        <!-- Validasi HTML Blackbox BB-04: Hanya menerima angka -->
-        <input type="number" id="id_appointment" placeholder="Contoh: 1" required>
-        <button onclick="generateInvoice()">Buat Invoice</button>
-        
-        <div id="result"></div>
+
+<div class="container">
+    <h1>Sistem Informasi Manajemen Rumah Sakit</h1>
+    <div class="form-group">
+        <label for="role-selector">Pilih Role:</label>
+        <select id="role-selector">
+            <option value="">--Pilih Role--</option>
+            <option value="admin">Admin</option>
+            <option value="receptionist">Resepsionis</option>
+            <option value="doctor">Dokter</option>
+            <option value="pharmacist">Apoteker</option>
+            <option value="cashier">Kasir</option>
+        </select>
     </div>
 
-    <script>
-        async function generateInvoice() {
-            const id = document.getElementById('id_appointment').value;
-            const resultDiv = document.getElementById('result');
-            
-            if(!id) {
-                resultDiv.innerHTML = '<div class="error">ID tidak boleh kosong!</div>';
-                return;
-            }
+    <!-- Admin Panel -->
+    <div id="admin-panel" class="role-panel">
+        <h2>Admin</h2>
+        <div class="form-group">
+            <h3>Tambah User Baru</h3>
+            <input type="text" id="admin-username" placeholder="Username Baru">
+            <input type="password" id="admin-password" placeholder="Password">
+            <input type="text" id="admin-role" placeholder="Role (e.g., Admin, Dokter)">
+            <button onclick="addUser()">Tambah User</button>
+        </div>
+        <hr>
+        <div class="form-group">
+            <h3>Ubah Role User</h3>
+            <label for="admin-user-id">User ID</label>
+            <input type="number" id="admin-user-id" placeholder="e.g., 1">
+            <label for="admin-new-role">Role Baru</label>
+            <input type="text" id="admin-new-role" placeholder="e.g., Admin, Dokter">
+            <button onclick="changeUserRole()">Ubah Role User</button>
+        </div>
+    </div>
 
-            resultDiv.innerHTML = 'Memproses...';
+    <!-- Receptionist Panel -->
+    <div id="receptionist-panel" class="role-panel">
+        <h2>Resepsionis</h2>
+        <div class="form-group">
+            <h3>Daftarkan Pasien</h3>
+            <input type="text" id="rec-nik" placeholder="NIK"><br>
+            <input type="text" id="rec-nama" placeholder="Nama Pasien"><br>
+            <input type="text" id="rec-alamat" placeholder="Alamat"><br>
+            <input type="date" id="rec-tgl-lahir"><br>
+            <button onclick="registerPatient()">Daftarkan Pasien</button>
+        </div>
+        <div class="form-group">
+            <h3>Jadwalkan Dokter</h3>
+            <input type="number" id="rec-appt-patient-id" placeholder="ID Pasien"><br>
+            <input type="number" id="rec-appt-doctor-id" placeholder="ID Dokter"><br>
+            <input type="datetime-local" id="rec-appt-jadwal"><br>
+            <button onclick="scheduleDoctor()">Jadwalkan</button>
+        </div>
+         <div class="form-group">
+            <h3>Lihat Status Kamar</h3>
+            <button onclick="getRooms()">Tampilkan Status Kamar</button>
+        </div>
+    </div>
 
-            const response = await fetch('/api/billing', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id_appointment: parseInt(id) })
-            });
+    <!-- Doctor Panel -->
+    <div id="doctor-panel" class="role-panel">
+        <h2>Dokter</h2>
+        <div class="form-group">
+            <h3>Input Rekam Medis</h3>
+            <input type="number" id="doc-rec-patient-id" placeholder="ID Pasien"><br>
+            <input type="number" id="doc-rec-doctor-id" placeholder="ID Dokter"><br>
+            <input type="number" id="doc-rec-appt-id" placeholder="ID Appointment"><br>
+            <input type="text" id="doc-rec-diagnosa" placeholder="Diagnosa"><br>
+            <input type="text" id="doc-rec-tindakan" placeholder="Tindakan"><br>
+            <button onclick="inputMedicalRecord()">Simpan Rekam Medis</button>
+        </div>
+        <div class="form-group">
+            <h3>Buat Resep</h3>
+            <input type="number" id="doc-presc-record-id" placeholder="ID Rekam Medis"><br>
+            <input type="number" id="doc-presc-obat-id" placeholder="ID Obat"><br>
+            <input type="number" id="doc-presc-jumlah" placeholder="Jumlah"><br>
+            <button onclick="createPrescription()">Buat Resep</button>
+        </div>
+    </div>
 
-            const data = await response.json();
+    <!-- Pharmacist Panel -->
+    <div id="pharmacist-panel" class="role-panel">
+        <h2>Apoteker</h2>
+        <div class="form-group">
+            <h3>Proses Resep Obat (Dispensing)</h3>
+            <input type="number" id="pharm-presc-id" placeholder="ID Resep"><br>
+            <button onclick="processPrescription()">Berikan Obat (Proses Resep)</button>
+        </div>
+        <div class="form-group">
+            <h3>Kelola Obat</h3>
+            <button onclick="getMedicines()">Lihat Semua Obat</button>
+        </div>
+        <div class="form-group">
+            <h4>Tambah Obat Baru</h4>
+            <input type="text" id="pharm-nama-obat" placeholder="Nama Obat"><br>
+            <input type="number" id="pharm-stok" placeholder="Stok Awal"><br>
+            <input type="number" id="pharm-harga" placeholder="Harga Satuan"><br>
+            <button onclick="addMedicine()">Tambah Obat</button>
+        </div>
+    </div>
 
-            if(response.status === 201) {
-                resultDiv.innerHTML = `
-                    <div class="success">
-                        <strong>Berhasil!</strong><br>
-                        ID Invoice: ${data.data.id_invoice}<br>
-                        Jenis Bayar: ${data.data.jenis_pembayaran}<br>
-                        <strong>Total: Rp ${data.data.total}</strong>
-                    </div>`;
-            } else {
-                resultDiv.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+    <!-- Cashier Panel -->
+    <div id="cashier-panel" class="role-panel">
+        <h2>Kasir</h2>
+        <div class="form-group">
+            <h3>Buat Billing</h3>
+            <input type="number" id="cashier-appt-id" placeholder="ID Appointment">
+            <button onclick="createBilling()">Buat Billing</button>
+        </div>
+        <div class="form-group">
+            <h3>Ubah Status Bayar</h3>
+            <input type="number" id="cashier-invoice-id" placeholder="ID Invoice">
+            <select id="cashier-status-bayar">
+                <option value="Lunas">Lunas</option>
+                <option value="Belum Bayar">Belum Bayar</option>
+            </select>
+            <button onclick="updatePaymentStatus()">Ubah Status</button>
+        </div>
+        <div class="form-group">
+            <h3>Cari Invoice by Nama Pasien</h3>
+            <input type="text" id="cashier-patient-name" placeholder="Nama Pasien">
+            <button onclick="searchInvoices()">Cari Invoice</button>
+        </div>
+    </div>
+
+    <div id="response">
+        <p>Hasil akan ditampilkan di sini...</p>
+    </div>
+</div>
+
+<script>
+    document.getElementById('role-selector').addEventListener('change', function() {
+        // Hide all panels
+        document.querySelectorAll('.role-panel').forEach(panel => panel.style.display = 'none');
+        
+        // Show selected panel
+        const selectedRole = this.value;
+        if (selectedRole) {
+            const panel = document.getElementById(selectedRole + '-panel');
+            if (panel) {
+                panel.style.display = 'block';
             }
         }
-    </script>
+    });
+
+    const responseDiv = document.getElementById('response');
+
+    async function apiCall(endpoint, method, body) {
+        try {
+            const options = {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+            };
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+            // Corrected the fetch URL to include the '/api' prefix
+            const response = await fetch('/api' + endpoint, options);
+            const result = await response.json();
+            responseDiv.textContent = JSON.stringify(result, null, 2);
+        } catch (error) {
+            responseDiv.textContent = 'Error: ' + error.message;
+        }
+    }
+
+    // Admin functions
+    function addUser() {
+        const username = document.getElementById('admin-username').value;
+        const password = document.getElementById('admin-password').value;
+        const role = document.getElementById('admin-role').value;
+        apiCall('/users', 'POST', { username, password, role });
+    }
+
+    function changeUserRole() {
+        const userId = document.getElementById('admin-user-id').value;
+        const newRole = document.getElementById('admin-new-role').value;
+        apiCall(`/users/${userId}/role`, 'PUT', { role: newRole });
+    }
+
+    // Receptionist functions
+    function registerPatient() {
+        const nik = document.getElementById('rec-nik').value;
+        const nama = document.getElementById('rec-nama').value;
+        const alamat = document.getElementById('rec-alamat').value;
+        const tgl_lahir = document.getElementById('rec-tgl-lahir').value;
+        apiCall('/receptionist/patients', 'POST', { nik, nama, alamat, tgl_lahir });
+    }
+    function scheduleDoctor() {
+        const id_patient = document.getElementById('rec-appt-patient-id').value;
+        const id_doctor = document.getElementById('rec-appt-doctor-id').value;
+        const jadwal = document.getElementById('rec-appt-jadwal').value;
+        apiCall('/receptionist/appointments', 'POST', { id_patient, id_doctor, jadwal });
+    }
+    function getRooms() {
+        apiCall('/receptionist/rooms', 'GET');
+    }
+
+    // Doctor functions
+    function inputMedicalRecord() {
+        const id_patient = document.getElementById('doc-rec-patient-id').value;
+        const id_doctor = document.getElementById('doc-rec-doctor-id').value;
+        const id_appointment = document.getElementById('doc-rec-appt-id').value;
+        const diagnosa = document.getElementById('doc-rec-diagnosa').value;
+        const tindakan = document.getElementById('doc-rec-tindakan').value;
+        apiCall('/doctor/medical_records', 'POST', { id_patient, id_doctor, id_appointment, diagnosa, tindakan });
+    }
+    function createPrescription() {
+        const id_record = document.getElementById('doc-presc-record-id').value;
+        const id_obat = document.getElementById('doc-presc-obat-id').value;
+        const jumlah = document.getElementById('doc-presc-jumlah').value;
+        apiCall('/doctor/prescriptions', 'POST', { id_record, id_obat, jumlah });
+    }
+
+    // Pharmacist functions
+    function processPrescription() {
+        const id_prescription = document.getElementById('pharm-presc-id').value;
+        apiCall('/pharmacist/prescriptions', 'POST', { id_prescription });
+    }
+    function getMedicines() {
+        apiCall('/pharmacist/medicines', 'GET');
+    }
+    function addMedicine() {
+        const nama_obat = document.getElementById('pharm-nama-obat').value;
+        const stok = document.getElementById('pharm-stok').value;
+        const harga = document.getElementById('pharm-harga').value;
+        apiCall('/pharmacist/medicines', 'POST', { nama_obat, stok, harga });
+    }
+
+    // Cashier functions
+    function searchInvoices() {
+        const patientName = document.getElementById('cashier-patient-name').value;
+        apiCall(`/cashier/invoices?patient_name=${patientName}`, 'GET');
+    }
+    function createBilling() {
+        const id_appointment = document.getElementById('cashier-appt-id').value;
+        apiCall('/cashier/billing', 'POST', { id_appointment });
+    }
+    function updatePaymentStatus() {
+        const invoice_id = document.getElementById('cashier-invoice-id').value;
+        const status_bayar = document.getElementById('cashier-status-bayar').value;
+        apiCall(`/cashier/invoices/${invoice_id}/status`, 'PUT', { status_bayar });
+    }
+
+</script>
+
 </body>
 </html>

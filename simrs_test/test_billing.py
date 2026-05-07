@@ -1,5 +1,5 @@
 import pytest
-from billing import calculate_billing
+from .billing import calculate_billing
 
 def test_billing_vip():
     # Menguji jalur VIP: (500k * 2) + 200k = 1.2jt
@@ -26,3 +26,17 @@ def test_empty_room_type():
     # Menguji jika input tipe kamar kosong
     with pytest.raises(ValueError):
         calculate_billing(500000, 200000, "")
+
+def test_negative_cost():
+    # Menguji jika input biaya negatif
+    with pytest.raises(ValueError):
+        calculate_billing(-500000, 200000, "VIP")
+    with pytest.raises(ValueError):
+        calculate_billing(500000, -200000, "VIP")
+
+def test_invalid_cost_type():
+    # Menguji jika input biaya bukan angka
+    with pytest.raises(TypeError):
+        calculate_billing("500000", 200000, "VIP")
+    with pytest.raises(TypeError):
+        calculate_billing(500000, "200000", "VIP")

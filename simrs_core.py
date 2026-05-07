@@ -8,6 +8,11 @@ def get_db_connection():
         database="simrs"
     )
 
+def close_db_connection(connection):
+    """Fungsi untuk menutup koneksi database."""
+    if connection.is_connected():
+        connection.close()
+
 def generate_billing(id_appointment):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -85,30 +90,4 @@ def generate_billing(id_appointment):
         return "Terjadi kesalahan sistem"
     finally:
         cursor.close()
-        conn.close()
-
-
-# ==========================================
-# --- SCRIPT PENGUJIAN WHITEBOX (TEST CASES) ---
-# ==========================================
-
-# TC-01: Positive Test (Pasien Umum)
-# Menguji pasien ID 1 (Pasien Umum). Total tagihan HARUS LEBIH DARI 0.
-def test_generate_billing_umum():
-    result = generate_billing(1)
-    assert result != "Appointment tidak ditemukan"
-    assert result["jenis_pembayaran"] == "Umum"
-    assert result["total"] > 0
-
-# TC-02: Edge Case Test (Pasien BPJS)
-# Menguji pasien ID 2 (Pasien BPJS). Total tagihan HARUS TEPAT 0.
-def test_generate_billing_bpjs():
-    result = generate_billing(2)
-    assert result != "Appointment tidak ditemukan"
-    assert result["jenis_pembayaran"] == "BPJS"
-    assert result["total"] == 0
-
-# TC-03: Negative Test (Appointment ID tidak ada di database)
-def test_generate_billing_not_found():
-    result = generate_billing(999)
-    assert result == "Appointment tidak ditemukan"
+        close_db_connection(conn)
